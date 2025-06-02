@@ -29,8 +29,12 @@ const limiter = rateLimit({
   max: 100, // limit each IP to 100 requests per windowMs
 })
 
-app.get('/', (req, res) => res.send('Working!'))
-app.use('/api/', limiter)
+// Health check route
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' })
+})
+
+// app.use('/api/', limiter)
 
 // Routes
 app.use('/api/auth', authRoutes)
