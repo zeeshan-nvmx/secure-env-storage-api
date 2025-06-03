@@ -1,5 +1,6 @@
 // controllers/auth.controller.js
 const User = require('../models/User')
+const bcrypt = require('bcryptjs')
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -128,8 +129,8 @@ exports.changePassword = async (req, res, next) => {
       })
     }
 
-    // Get user with password and PIN fields
-    const user = await User.findById(req.user.id).select('+password +pin')
+    // Get user with password field
+    const user = await User.findById(req.user.id).select('+password')
 
     // Check if old password matches
     const isMatch = await user.matchPassword(oldPassword)
@@ -141,9 +142,12 @@ exports.changePassword = async (req, res, next) => {
       })
     }
 
-    // Update password - this will trigger the pre-save hook
-    user.password = newPassword
-    await user.save()
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10)
+    const hashedPassword = await bcrypt.hash(newPassword, salt)
+
+    // Update password directly in database to avoid validation issues
+    await User.updateOne({ _id: req.user.id }, { $set: { password: hashedPassword } })
 
     res.status(200).json({
       success: true,
