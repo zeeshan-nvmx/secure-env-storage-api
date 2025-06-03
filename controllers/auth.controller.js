@@ -121,7 +121,15 @@ exports.changePassword = async (req, res, next) => {
   try {
     const { oldPassword, newPassword } = req.body
 
-    const user = await User.findById(req.user.id).select('+password')
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide old and new passwords',
+      })
+    }
+
+    // Get user with password and PIN fields
+    const user = await User.findById(req.user.id).select('+password +pin')
 
     // Check if old password matches
     const isMatch = await user.matchPassword(oldPassword)
@@ -133,7 +141,7 @@ exports.changePassword = async (req, res, next) => {
       })
     }
 
-    // Update password
+    // Update password - this will trigger the pre-save hook
     user.password = newPassword
     await user.save()
 

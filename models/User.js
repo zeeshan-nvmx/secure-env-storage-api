@@ -60,14 +60,15 @@ userSchema.pre('save', async function (next) {
     this.password = await bcrypt.hash(this.password, salt)
   }
 
-  // Handle PIN hashing
-  if (this.isModified('pin')) {
+  // Handle PIN hashing - only if PIN is provided and is not already hashed
+  if (this.isModified('pin') && this.pin && !this.pin.startsWith('$2')) {
+    // bcrypt hashes start with $2
     const salt = await bcrypt.genSalt(10)
     this.pin = await bcrypt.hash(this.pin, salt)
   }
 
-  // Generate master key for new users
-  if (!this.masterKey) {
+  // Generate master key for new users (only when both masterKey doesn't exist and PIN is available)
+  if (!this.masterKey && this.pin) {
     // Generate random master key
     const masterKey = crypto.randomBytes(32)
 
@@ -156,13 +157,13 @@ userSchema.methods.reEncryptMasterKey = async function (oldPin, newPin) {
 
     // Hash the new PIN
     const salt = await bcrypt.genSalt(10)
-    this.pin = await bcrypt.hash(newPin, salt)
+    const hashedNewPin = await bcrypt.hash(newPin, salt)
 
     // Generate new salt for PIN-based encryption
-    this.pinSalt = crypto.randomBytes(32).toString('hex')
+    const newPinSalt = crypto.randomBytes(32).toString('hex')
 
     // Derive key from new hashed PIN
-    const derivedKey = crypto.pbkdf2Sync(this.pin, this.pinSalt, 100000, 32, 'sha256')
+    const derivedKey = crypto.pbkdf2Sync(hashedNewPin, newPinSalt, 100000, 32, 'sha256')
 
     // Re-encrypt master key with new derived key
     const algorithm = process.env.ENCRYPTION_ALGORITHM || 'aes-256-gcm'
@@ -172,11 +173,20 @@ userSchema.methods.reEncryptMasterKey = async function (oldPin, newPin) {
     let encrypted = cipher.update(masterKey, null, 'hex')
     encrypted += cipher.final('hex')
 
-    this.masterKey = encrypted
-    this.masterKeyIv = iv.toString('hex')
-    this.masterKeyAuthTag = cipher.getAuthTag().toString('hex')
+    // Update all fields at once to avoid validation issues
+    await mongoose.model('User').updateOne(
+      { _id: this._id },
+      {
+        $set: {
+          pin: hashedNewPin,
+          pinSalt: newPinSalt,
+          masterKey: encrypted,
+          masterKeyIv: iv.toString('hex'),
+          masterKeyAuthTag: cipher.getAuthTag().toString('hex'),
+        },
+      }
+    )
 
-    await this.save()
     return true
   } catch (error) {
     throw new Error('Failed to re-encrypt master key: ' + error.message)
