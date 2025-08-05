@@ -7,6 +7,11 @@ const secretFileSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  project: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Project',
+    default: null,
+  },
   filename: {
     type: String,
     required: [true, 'Please provide a filename'],
@@ -41,6 +46,10 @@ const secretFileSchema = new mongoose.Schema({
     default: Date.now,
   },
 })
+
+// Create indexes for better query performance
+secretFileSchema.index({ user: 1, project: 1 })
+secretFileSchema.index({ user: 1, filename: 'text' })
 
 // Update the updatedAt timestamp on save
 secretFileSchema.pre('save', function (next) {

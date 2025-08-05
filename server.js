@@ -9,6 +9,7 @@ require('dotenv').config()
 
 const authRoutes = require('./routes/auth.routes')
 const fileRoutes = require('./routes/file.routes')
+const projectRoutes = require('./routes/project.routes')
 
 const app = express()
 
@@ -39,6 +40,7 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes)
 app.use('/api/files', fileRoutes)
+app.use('/api/projects', projectRoutes)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

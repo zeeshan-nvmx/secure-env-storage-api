@@ -1,5 +1,6 @@
 // controllers/file.controller.js
 const SecretFile = require('../models/secretFile')
+const Project = require('../models/Project')
 const User = require('../models/User')
 const { encrypt, decrypt } = require('../utils/encryption')
 
@@ -16,7 +17,7 @@ exports.uploadFile = async (req, res, next) => {
     }
 
     const file = req.files.file
-    const { filename, pin } = req.body
+    const { filename, pin, projectId } = req.body
 
     if (!pin) {
       return res.status(400).json({
@@ -40,6 +41,22 @@ exports.uploadFile = async (req, res, next) => {
     // Get decrypted master key
     const masterKey = user.getDecryptedMasterKey(pin)
 
+    // Validate project if provided
+    let project = null
+    if (projectId) {
+      project = await Project.findOne({
+        _id: projectId,
+        user: req.user.id,
+      })
+      
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          error: 'Project not found',
+        })
+      }
+    }
+
     // Determine file type
     let fileType = 'other'
     if (file.name.endsWith('.env')) fileType = 'env'
@@ -53,6 +70,7 @@ exports.uploadFile = async (req, res, next) => {
     // Create secret file
     const secretFile = await SecretFile.create({
       user: req.user.id,
+      project: projectId || null,
       filename: filename || file.name,
       encryptedContent: encryptedData.encryptedContent,
       iv: encryptedData.iv,
@@ -68,6 +86,7 @@ exports.uploadFile = async (req, res, next) => {
         filename: secretFile.filename,
         fileType: secretFile.fileType,
         size: secretFile.size,
+        project: secretFile.project,
         createdAt: secretFile.createdAt,
       },
     })
@@ -84,7 +103,7 @@ exports.uploadFile = async (req, res, next) => {
 // @access  Private
 exports.createNote = async (req, res, next) => {
   try {
-    const { filename, content, fileType = 'txt', pin } = req.body
+    const { filename, content, fileType = 'txt', pin, projectId } = req.body
 
     if (!filename || !content) {
       return res.status(400).json({
@@ -115,12 +134,29 @@ exports.createNote = async (req, res, next) => {
     // Get decrypted master key
     const masterKey = user.getDecryptedMasterKey(pin)
 
+    // Validate project if provided
+    let project = null
+    if (projectId) {
+      project = await Project.findOne({
+        _id: projectId,
+        user: req.user.id,
+      })
+      
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          error: 'Project not found',
+        })
+      }
+    }
+
     // Encrypt the content
     const encryptedData = encrypt(content, masterKey)
 
     // Create secret file
     const secretFile = await SecretFile.create({
       user: req.user.id,
+      project: projectId || null,
       filename,
       encryptedContent: encryptedData.encryptedContent,
       iv: encryptedData.iv,
@@ -136,6 +172,7 @@ exports.createNote = async (req, res, next) => {
         filename: secretFile.filename,
         fileType: secretFile.fileType,
         size: secretFile.size,
+        project: secretFile.project,
         createdAt: secretFile.createdAt,
       },
     })
@@ -152,7 +189,33 @@ exports.createNote = async (req, res, next) => {
 // @access  Private
 exports.getFiles = async (req, res, next) => {
   try {
-    const files = await SecretFile.find({ user: req.user.id }).select('-encryptedContent -iv -authTag').sort('-createdAt')
+    const { search, project, fileType } = req.query
+    
+    let query = { user: req.user.id }
+    
+    // Filter by project
+    if (project) {
+      if (project === 'unassigned') {
+        query.project = null
+      } else {
+        query.project = project
+      }
+    }
+    
+    // Filter by file type
+    if (fileType) {
+      query.fileType = fileType
+    }
+    
+    // Add search functionality
+    if (search) {
+      query.filename = { $regex: search, $options: 'i' }
+    }
+
+    const files = await SecretFile.find(query)
+      .populate('project', 'name color')
+      .select('-encryptedContent -iv -authTag')
+      .sort('-createdAt')
 
     res.status(200).json({
       success: true,
@@ -250,7 +313,7 @@ exports.getFile = async (req, res, next) => {
 // @access  Private
 exports.updateFile = async (req, res, next) => {
   try {
-    const { content, filename, pin } = req.body
+    const { content, filename, pin, projectId } = req.body
 
     if (content && !pin) {
       return res.status(400).json({
@@ -299,6 +362,28 @@ exports.updateFile = async (req, res, next) => {
       file.filename = filename
     }
 
+    // Update project if provided
+    if (projectId !== undefined) {
+      if (projectId === null || projectId === '') {
+        file.project = null
+      } else {
+        // Validate project exists and belongs to user
+        const project = await Project.findOne({
+          _id: projectId,
+          user: req.user.id,
+        })
+        
+        if (!project) {
+          return res.status(404).json({
+            success: false,
+            error: 'Project not found',
+          })
+        }
+        
+        file.project = projectId
+      }
+    }
+
     await file.save()
 
     res.status(200).json({
@@ -342,6 +427,112 @@ exports.deleteFile = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {},
+    })
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    })
+  }
+}
+
+// @desc    Move files to project
+// @route   PUT /api/files/move
+// @access  Private
+exports.moveFiles = async (req, res, next) => {
+  try {
+    const { fileIds, projectId } = req.body
+
+    if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide an array of file IDs',
+      })
+    }
+
+    // Validate project if provided
+    let project = null
+    if (projectId && projectId !== null && projectId !== '') {
+      project = await Project.findOne({
+        _id: projectId,
+        user: req.user.id,
+      })
+
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          error: 'Project not found',
+        })
+      }
+    }
+
+    // Update files
+    const result = await SecretFile.updateMany(
+      {
+        _id: { $in: fileIds },
+        user: req.user.id,
+      },
+      {
+        $set: { project: projectId || null },
+      }
+    )
+
+    res.status(200).json({
+      success: true,
+      data: {
+        modifiedCount: result.modifiedCount,
+      },
+    })
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    })
+  }
+}
+
+// @desc    Search files and projects
+// @route   GET /api/files/search
+// @access  Private
+exports.searchAll = async (req, res, next) => {
+  try {
+    const { q } = req.query
+
+    if (!q) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide a search query',
+      })
+    }
+
+    // Search files
+    const files = await SecretFile.find({
+      user: req.user.id,
+      filename: { $regex: q, $options: 'i' },
+    })
+      .populate('project', 'name color')
+      .select('-encryptedContent -iv -authTag')
+      .sort('-updatedAt')
+      .limit(10)
+
+    // Search projects
+    const projects = await Project.find({
+      user: req.user.id,
+      $or: [
+        { name: { $regex: q, $options: 'i' } },
+        { description: { $regex: q, $options: 'i' } },
+      ],
+    })
+      .populate('fileCount')
+      .sort('-updatedAt')
+      .limit(5)
+
+    res.status(200).json({
+      success: true,
+      data: {
+        files,
+        projects,
+      },
     })
   } catch (err) {
     res.status(500).json({

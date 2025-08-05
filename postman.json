@@ -1,0 +1,1254 @@
+{
+	"info": {
+		"_postman_id": "babe4124-5717-41ae-9983-e72ac52ca090",
+		"name": "Secure Storage API ( env )",
+		"description": "API collection for secure storage of .env files and secret notes with PIN-based encryption and project organization",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32325694",
+		"_collection_link": "https://interstellar-comet-530995.postman.co/workspace/My-Workspace~9e37abfb-f317-4168-85f7-e6d1b45c3977/collection/32325694-babe4124-5717-41ae-9983-e72ac52ca090?action=share&source=collection_link&creator=32325694"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"zeeshan\",\n    \"email\": \"z@gmail.com\",\n    \"password\": \"password123\",\n    \"pin\": \"1234\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/register",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register a new user with username, email, password, and 4-digit PIN"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json()",
+									"pm.globals.set(\"token\", jsonData.token);",
+									"pm.globals.set(\"USER_ID\", jsonData.user.id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"z@gmail.com\",\n    \"password\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/login",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with email and password. Token will be saved to environment."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify PIN",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pin\": \"1234\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/verify-pin",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"verify-pin"
+							]
+						},
+						"description": "Verify user's PIN"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/me",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"me"
+							]
+						},
+						"description": "Get current logged in user information"
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"oldPassword\": \"password123\",\n    \"newPassword\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/change-password",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"change-password"
+							]
+						},
+						"description": "Change user password. Does not affect encrypted files."
+					},
+					"response": []
+				},
+				{
+					"name": "Change PIN",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"oldPin\": \"5678\",\n    \"newPin\": \"1234\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/change-pin",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"change-pin"
+							]
+						},
+						"description": "Change user PIN. This will re-encrypt all files with the new PIN."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Projects",
+			"item": [
+				{
+					"name": "Get All Projects",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/projects",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"projects"
+							]
+						},
+						"description": "Get all projects for the current user"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Projects",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/projects?search=webapp",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"projects"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "webapp",
+									"description": "Search projects by name or description"
+								}
+							]
+						},
+						"description": "Search projects by name or description"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Project",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('PROJECT_ID', response.data._id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"E-commerce Website\",\n    \"description\": \"Main e-commerce platform with user authentication and payment processing\",\n    \"color\": \"#007bff\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/projects",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"projects"
+							]
+						},
+						"description": "Create a new project with name, description, and color"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Project Details",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/projects/{{PROJECT_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"projects",
+								"{{PROJECT_ID}}"
+							]
+						},
+						"description": "Get project details including all files in the project"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Project",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"E-commerce Platform v2\",\n    \"description\": \"Updated e-commerce platform with microservices architecture\",\n    \"color\": \"#28a745\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/projects/{{PROJECT_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"projects",
+								"{{PROJECT_ID}}"
+							]
+						},
+						"description": "Update project name, description, or color"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Project",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/projects/{{PROJECT_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"projects",
+								"{{PROJECT_ID}}"
+							]
+						},
+						"description": "Delete a project (only allowed if no files are assigned to it)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Files",
+			"item": [
+				{
+					"name": "Upload File",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('FILE_ID', response.data.id);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"value": "",
+									"description": "Select a file to upload",
+									"type": "file"
+								},
+								{
+									"key": "pin",
+									"value": "1234",
+									"description": "Your 4-digit PIN",
+									"type": "text"
+								},
+								{
+									"key": "filename",
+									"value": "production.env",
+									"description": "Optional custom filename",
+									"type": "text"
+								},
+								{
+									"key": "projectId",
+									"value": "{{PROJECT_ID}}",
+									"description": "Optional project ID to assign file to",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/files/upload",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files",
+								"upload"
+							]
+						},
+						"description": "Upload an encrypted file. PIN is required for encryption. Can optionally assign to a project."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Note",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('NOTE_ID', response.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"filename\": \"api-keys.txt\",\n    \"content\": \"API_KEY=sk-1234567890abcdef\\nSECRET_KEY=secret_abcdef123456\\nDATABASE_URL=postgresql://user:pass@localhost:5432/mydb\\nREDIS_URL=redis://localhost:6379\",\n    \"fileType\": \"txt\",\n    \"pin\": \"1234\",\n    \"projectId\": \"{{PROJECT_ID}}\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/files/note",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files",
+								"note"
+							]
+						},
+						"description": "Create a secret note with text content. PIN is required for encryption. Can optionally assign to a project."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Files",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/files",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files"
+							]
+						},
+						"description": "Get list of all files for the current user. Does not include file content. Now includes project information."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Files by Project",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/files?project={{PROJECT_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files"
+							],
+							"query": [
+								{
+									"key": "project",
+									"value": "{{PROJECT_ID}}",
+									"description": "Filter files by project ID"
+								}
+							]
+						},
+						"description": "Get files filtered by project ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unassigned Files",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/files?project=unassigned",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files"
+							],
+							"query": [
+								{
+									"key": "project",
+									"value": "unassigned",
+									"description": "Get files not assigned to any project"
+								}
+							]
+						},
+						"description": "Get files that are not assigned to any project"
+					},
+					"response": []
+				},
+				{
+					"name": "Filter Files by Type",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/files?fileType=env",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files"
+							],
+							"query": [
+								{
+									"key": "fileType",
+									"value": "env",
+									"description": "Filter by file type (env, txt, json, other)"
+								}
+							]
+						},
+						"description": "Get files filtered by file type"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Files",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/files?search=production",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "production",
+									"description": "Search files by filename"
+								}
+							]
+						},
+						"description": "Search files by filename"
+					},
+					"response": []
+				},
+				{
+					"name": "Advanced File Filter",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/files?search=api&project={{PROJECT_ID}}&fileType=env",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "api",
+									"description": "Search term"
+								},
+								{
+									"key": "project",
+									"value": "{{PROJECT_ID}}",
+									"description": "Project filter"
+								},
+								{
+									"key": "fileType",
+									"value": "env",
+									"description": "File type filter"
+								}
+							]
+						},
+						"description": "Combine multiple filters: search, project, and file type"
+					},
+					"response": []
+				},
+				{
+					"name": "Global Search",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/files/search?q=database",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "database",
+									"description": "Search across files and projects"
+								}
+							]
+						},
+						"description": "Search across both files and projects simultaneously"
+					},
+					"response": []
+				},
+				{
+					"name": "Move Files to Project",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fileIds\": [\"{{FILE_ID}}\", \"{{NOTE_ID}}\"],\n    \"projectId\": \"{{PROJECT_ID}}\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/files/move",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files",
+								"move"
+							]
+						},
+						"description": "Move multiple files to a project or remove them from projects (set projectId to null)"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Files from Project",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fileIds\": [\"{{FILE_ID}}\"],\n    \"projectId\": null\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/files/move",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files",
+								"move"
+							]
+						},
+						"description": "Remove files from their current project (makes them unassigned)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get File Content",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/files/{{FILE_ID}}?pin=1234",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files",
+								"{{FILE_ID}}"
+							],
+							"query": [
+								{
+									"key": "pin",
+									"value": "1234",
+									"description": "Your 4-digit PIN to decrypt the file"
+								}
+							]
+						},
+						"description": "Get decrypted content of a specific file. PIN is required. Now includes project information."
+					},
+					"response": []
+				},
+				{
+					"name": "Update File",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"filename\": \"production-updated.env\",\n    \"content\": \"DATABASE_URL=postgresql://user:pass@localhost:5432/prod\\nREDIS_URL=redis://localhost:6379\\nAPI_KEY=new-api-key-123\\nSECRET_KEY=updated-secret-key\",\n    \"pin\": \"1234\",\n    \"projectId\": \"{{PROJECT_ID}}\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/files/{{FILE_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files",
+								"{{FILE_ID}}"
+							]
+						},
+						"description": "Update file content, filename, and/or project assignment. PIN is required if updating content."
+					},
+					"response": []
+				},
+				{
+					"name": "Update File Project Only",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"projectId\": \"{{PROJECT_ID}}\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/files/{{FILE_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files",
+								"{{FILE_ID}}"
+							]
+						},
+						"description": "Change only the project assignment of a file (no PIN required)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete File",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/files/{{FILE_ID}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"files",
+								"{{FILE_ID}}"
+							]
+						},
+						"description": "Delete a file permanently. This action cannot be undone."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "BASE_URL",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "TOKEN",
+			"value": "",
+			"type": "string",
+			"description": "Authentication token (set automatically after login)"
+		},
+		{
+			"key": "PROJECT_ID",
+			"value": "",
+			"type": "string",
+			"description": "Project ID (set automatically after project creation)"
+		},
+		{
+			"key": "FILE_ID",
+			"value": "",
+			"type": "string",
+			"description": "File ID (set automatically after file upload)"
+		},
+		{
+			"key": "NOTE_ID",
+			"value": "",
+			"type": "string",
+			"description": "Note ID (set automatically after note creation)"
+		}
+	]
+}
