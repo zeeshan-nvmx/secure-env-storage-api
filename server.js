@@ -35,7 +35,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' })
 })
 
-// app.use('/api/', limiter)
+app.use('/api/', limiter)
 
 // Routes
 app.use('/api/auth', authRoutes)
